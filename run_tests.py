@@ -38,17 +38,12 @@ img_path  = 'data/inpainting/{}'.format(args.input_image)
 mask_path  = 'data/inpainting/{}'.format(args.masked_image)
 
 # Load mask
-
 img_pil, img_np = get_image(img_path, imsize)
 img_mask_pil, img_mask_np = get_image(mask_path, imsize)
 
 # Center crop
-
 img_mask_pil = crop_image(img_mask_pil, dim_div_by)
 img_pil      = crop_image(img_pil,      dim_div_by)
-
-# Convert mask to black and white
-img_mask_pil = img_mask_pil.convert("1")
 
 img_np      = pil_to_np(img_pil)
 img_mask_np = pil_to_np(img_mask_pil)
@@ -144,8 +139,7 @@ elif 'library.png' in img_path:
     else:
         assert False
         
-elif 'mihir.jpg' in img_path:
-    
+else:
     INPUT = 'noise'
     input_depth = 1
     
@@ -188,99 +182,6 @@ elif 'mihir.jpg' in img_path:
         
     else:
         assert False
-
-elif 'football.jpg' in img_path:
-    
-    INPUT = 'noise'
-    input_depth = 1
-    
-    num_iter = 3001
-    show_every = 50
-    figsize = 8
-    reg_noise_std = 0.00
-    param_noise = True
-    
-    if 'skip' in NET_TYPE:
-        
-        depth = int(NET_TYPE[-1])
-        net = skip(input_depth, img_np.shape[0], 
-               num_channels_down = [16, 32, 64, 128, 128, 128][:depth],
-               num_channels_up =   [16, 32, 64, 128, 128, 128][:depth],
-               num_channels_skip =    [0, 0, 0, 0, 0, 0][:depth],  
-               filter_size_up = 3,filter_size_down = 5,  filter_skip_size=1,
-               upsample_mode='nearest', # downsample_mode='avg',
-               need1x1_up=False,
-               need_sigmoid=True, need_bias=True, pad=pad, act_fun='LeakyReLU').type(dtype)
-        
-        LR = 0.01 
-        
-    elif NET_TYPE == 'UNET':
-        
-        net = UNet(num_input_channels=input_depth, num_output_channels=3, 
-                   feature_scale=8, more_layers=1, 
-                   concat_x=False, upsample_mode='deconv', 
-                   pad='zero', norm_layer=torch.nn.InstanceNorm2d, need_sigmoid=True, need_bias=True)
-        
-        LR = 0.001
-        param_noise = False
-        
-    elif NET_TYPE == 'ResNet':
-        
-        net = ResNet(input_depth, img_np.shape[0], 8, 32, need_sigmoid=True, act_fun='LeakyReLU')
-        
-        LR = 0.001
-        param_noise = False
-        
-    else:
-        assert False
-
-elif 'snow.jpg' in img_path:
-    
-    INPUT = 'noise'
-    input_depth = 1
-    
-    num_iter = 3001
-    show_every = 50
-    figsize = 8
-    reg_noise_std = 0.00
-    param_noise = True
-    
-    if 'skip' in NET_TYPE:
-        
-        depth = int(NET_TYPE[-1])
-        net = skip(input_depth, img_np.shape[0], 
-               num_channels_down = [16, 32, 64, 128, 128, 128][:depth],
-               num_channels_up =   [16, 32, 64, 128, 128, 128][:depth],
-               num_channels_skip =    [0, 0, 0, 0, 0, 0][:depth],  
-               filter_size_up = 3,filter_size_down = 5,  filter_skip_size=1,
-               upsample_mode='nearest', # downsample_mode='avg',
-               need1x1_up=False,
-               need_sigmoid=True, need_bias=True, pad=pad, act_fun='LeakyReLU').type(dtype)
-        
-        LR = 0.01 
-        
-    elif NET_TYPE == 'UNET':
-        
-        net = UNet(num_input_channels=input_depth, num_output_channels=3, 
-                   feature_scale=8, more_layers=1, 
-                   concat_x=False, upsample_mode='deconv', 
-                   pad='zero', norm_layer=torch.nn.InstanceNorm2d, need_sigmoid=True, need_bias=True)
-        
-        LR = 0.001
-        param_noise = False
-        
-    elif NET_TYPE == 'ResNet':
-        
-        net = ResNet(input_depth, img_np.shape[0], 8, 32, need_sigmoid=True, act_fun='LeakyReLU')
-        
-        LR = 0.001
-        param_noise = False
-        
-    else:
-        assert False
-
-else:
-    assert False
 
 net = net.type(dtype)
 net_input = get_noise(input_depth, INPUT, img_np.shape[1:]).type(dtype)
