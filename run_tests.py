@@ -18,7 +18,6 @@ from utils.inpainting_utils import *
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
-dtype = torch.cuda.FloatTensor
 
 PLOT = False
 imsize = -1
