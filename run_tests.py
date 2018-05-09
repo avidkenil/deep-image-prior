@@ -33,8 +33,8 @@ dtype = torch.cuda.FloatTensor
 #mask_path = 'data/inpainting/library_mask.png'
 
 ## Fig 8
-img_path  = 'data/inpainting/mihir.jpg'
-mask_path = 'data/inpainting/mihir_mask.jpg'
+img_path  = 'data/inpainting/football.jpg'
+mask_path = 'data/inpainting/football_masked.jpg'
 
 ## Fig 7 (top)
 #img_path  = 'data/inpainting/kate.png'
@@ -54,6 +54,8 @@ img_mask_pil, img_mask_np = get_image(mask_path, imsize)
 
 img_mask_pil = crop_image(img_mask_pil, dim_div_by)
 img_pil      = crop_image(img_pil,      dim_div_by)
+
+#img_mask_pil = img_mask_pil.convert('1')
 
 img_np      = pil_to_np(img_pil)
 img_mask_np = pil_to_np(img_mask_pil)
@@ -149,7 +151,7 @@ elif 'library.png' in img_path:
     else:
         assert False
         
-elif 'mihir.jpg' in img_path:
+elif 'football.jpg' in img_path:
     
     INPUT = 'noise'
     input_depth = 1
