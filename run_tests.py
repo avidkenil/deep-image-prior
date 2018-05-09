@@ -5,6 +5,7 @@ from __future__ import print_function
 import os
 # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
+import argparse
 import numpy as np
 from models.resnet import ResNet
 from models.unet import UNet
@@ -20,47 +21,39 @@ torch.backends.cudnn.benchmark = True
 dtype = torch.cuda.FloatTensor
 
 PLOT = False
-imsize=-1
+imsize = -1
 dim_div_by = 64
 dtype = torch.cuda.FloatTensor
 
-## Fig 6
-# img_path  = 'data/inpainting/vase.png'
-# mask_path = 'data/inpainting/vase_mask.png'
-
-## Fig 8
-#img_path  = 'data/inpainting/library.png'
-#mask_path = 'data/inpainting/library_mask.png'
-
-## Fig 8
-img_path  = 'data/inpainting/football.jpg'
-mask_path = 'data/inpainting/football_masked.jpg'
-
-## Fig 7 (top)
-#img_path  = 'data/inpainting/kate.png'
-#mask_path = 'data/inpainting/kate_mask.png'
-
-
+parser = argparse.ArgumentParser()
+parser.add_argument('input_image', metavar='fin', type=str, \
+    help='path to original image file')
+parser.add_argument('masked_image', metavar='fin', type=str, \
+    help='path to masked image file')
+args = parser.parse_args()
 
 NET_TYPE = 'skip_depth6' # one of skip_depth4|skip_depth2|UNET|ResNet
 
+img_path  = 'data/inpainting/{}'.format(args.input_image)
+mask_path  = 'data/inpainting/{}'.format(args.masked_image)
 
-#Load mask
+# Load mask
 
 img_pil, img_np = get_image(img_path, imsize)
 img_mask_pil, img_mask_np = get_image(mask_path, imsize)
 
-#Center crop
+# Center crop
 
 img_mask_pil = crop_image(img_mask_pil, dim_div_by)
 img_pil      = crop_image(img_pil,      dim_div_by)
 
-#img_mask_pil = img_mask_pil.convert('1')
+# Convert mask to black and white
+img_mask_pil = img_mask_pil.convert("1")
 
 img_np      = pil_to_np(img_pil)
 img_mask_np = pil_to_np(img_mask_pil)
 
-#get image mask var
+# Get image mask var
 img_mask_var = np_to_var(img_mask_np).type(dtype)
 
 #SETUP
@@ -69,7 +62,7 @@ pad = 'reflection' # 'zero'
 OPT_OVER = 'net'
 OPTIMIZER = 'adam'
 
-#NET Setup for a specific image:
+# Network Setup for a specific image:
 if 'vase.png' in img_path:
     INPUT = 'meshgrid'
     input_depth = 2
@@ -151,7 +144,97 @@ elif 'library.png' in img_path:
     else:
         assert False
         
+elif 'mihir.jpg' in img_path:
+    
+    INPUT = 'noise'
+    input_depth = 1
+    
+    num_iter = 6001
+    show_every = 50
+    figsize = 8
+    reg_noise_std = 0.00
+    param_noise = True
+    
+    if 'skip' in NET_TYPE:
+        
+        depth = int(NET_TYPE[-1])
+        net = skip(input_depth, img_np.shape[0], 
+               num_channels_down = [16, 32, 64, 128, 128, 128][:depth],
+               num_channels_up =   [16, 32, 64, 128, 128, 128][:depth],
+               num_channels_skip =    [0, 0, 0, 0, 0, 0][:depth],  
+               filter_size_up = 3,filter_size_down = 5,  filter_skip_size=1,
+               upsample_mode='nearest', # downsample_mode='avg',
+               need1x1_up=False,
+               need_sigmoid=True, need_bias=True, pad=pad, act_fun='LeakyReLU').type(dtype)
+        
+        LR = 0.01 
+        
+    elif NET_TYPE == 'UNET':
+        
+        net = UNet(num_input_channels=input_depth, num_output_channels=3, 
+                   feature_scale=8, more_layers=1, 
+                   concat_x=False, upsample_mode='deconv', 
+                   pad='zero', norm_layer=torch.nn.InstanceNorm2d, need_sigmoid=True, need_bias=True)
+        
+        LR = 0.001
+        param_noise = False
+        
+    elif NET_TYPE == 'ResNet':
+        
+        net = ResNet(input_depth, img_np.shape[0], 8, 32, need_sigmoid=True, act_fun='LeakyReLU')
+        
+        LR = 0.001
+        param_noise = False
+        
+    else:
+        assert False
+
 elif 'football.jpg' in img_path:
+    
+    INPUT = 'noise'
+    input_depth = 1
+    
+    num_iter = 3001
+    show_every = 50
+    figsize = 8
+    reg_noise_std = 0.00
+    param_noise = True
+    
+    if 'skip' in NET_TYPE:
+        
+        depth = int(NET_TYPE[-1])
+        net = skip(input_depth, img_np.shape[0], 
+               num_channels_down = [16, 32, 64, 128, 128, 128][:depth],
+               num_channels_up =   [16, 32, 64, 128, 128, 128][:depth],
+               num_channels_skip =    [0, 0, 0, 0, 0, 0][:depth],  
+               filter_size_up = 3,filter_size_down = 5,  filter_skip_size=1,
+               upsample_mode='nearest', # downsample_mode='avg',
+               need1x1_up=False,
+               need_sigmoid=True, need_bias=True, pad=pad, act_fun='LeakyReLU').type(dtype)
+        
+        LR = 0.01 
+        
+    elif NET_TYPE == 'UNET':
+        
+        net = UNet(num_input_channels=input_depth, num_output_channels=3, 
+                   feature_scale=8, more_layers=1, 
+                   concat_x=False, upsample_mode='deconv', 
+                   pad='zero', norm_layer=torch.nn.InstanceNorm2d, need_sigmoid=True, need_bias=True)
+        
+        LR = 0.001
+        param_noise = False
+        
+    elif NET_TYPE == 'ResNet':
+        
+        net = ResNet(input_depth, img_np.shape[0], 8, 32, need_sigmoid=True, act_fun='LeakyReLU')
+        
+        LR = 0.001
+        param_noise = False
+        
+    else:
+        assert False
+
+elif 'snow.jpg' in img_path:
     
     INPUT = 'noise'
     input_depth = 1
@@ -212,7 +295,7 @@ mse = torch.nn.MSELoss().type(dtype)
 img_var = np_to_var(img_np).type(dtype)
 mask_var = np_to_var(img_mask_np).type(dtype)
 
-#main loop to get everything
+# Main loop to get everything
 i = 0
 def closure():
     
@@ -245,10 +328,7 @@ noise = net_input.data.clone()
 p = get_params(OPT_OVER, net, net_input)
 optimize(OPTIMIZER, p, closure, LR, num_iter)
 
-#get the final results
+# Get the final results
 out_np = var_to_np(net(net_input))
 out_img = np_to_pil(out_np)
 out_img.save('outputs/{}_result.png'.format(img_path.split('/')[-1].split('.')[0]))
-
-
-
