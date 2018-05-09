@@ -142,7 +142,7 @@ else:
     INPUT = 'noise'
     input_depth = 1
     
-    num_iter = 6001
+    num_iter = 3000
     show_every = 50
     figsize = 8
     reg_noise_std = 0.00
