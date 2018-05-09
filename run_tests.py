@@ -29,7 +29,7 @@ parser.add_argument('input_image', metavar='fin', type=str, \
     help='path to original image file')
 parser.add_argument('masked_image', metavar='fin', type=str, \
     help='path to masked image file')
-parser.add_argument('--iter', metavar='iter', type=str, \
+parser.add_argument('--iter', metavar='iter', type=int, \
     help='number of iterations')
 args = parser.parse_args()
 
